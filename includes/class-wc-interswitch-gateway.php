@@ -2,7 +2,7 @@
 class WC_Interswitch_Gateway extends WC_Payment_Gateway {
     public function __construct() {
         $this->id = 'interswitch';
-        $this->icon = 'https://www.interswitchgroup.com/assets/images/home/interswitch_logo.svg';
+        $this->icon = plugins_url('assets/images/interswitch-logo.svg', dirname(__FILE__));
         $this->has_fields = false;
         $this->method_title = 'Interswitch Payment Gateway';
         $this->method_description = 'Accept payments through Interswitch payment gateway';
@@ -95,13 +95,23 @@ class WC_Interswitch_Gateway extends WC_Payment_Gateway {
         // Store transaction data in order meta
         update_post_meta($order_id, '_interswitch_checkout_data', $checkout_data);
 
+        // If this is from blocks checkout or regular checkout with AJAX
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return [
+                'result' => 'success',
+                'redirect' => add_query_arg('order_pay_ipg', $order_id, $order->get_checkout_payment_url(true))
+            ];
+        }
+
+        // Load and display the payment form template
+        ob_start();
+        include(plugin_dir_path(dirname(__FILE__)) . 'templates/payment-form.php');
+        $html = ob_get_clean();
+
         return array(
             'result' => 'success',
-            'redirect' => add_query_arg(
-                'order_pay_ipg', 
-                $order_id, 
-                $order->get_checkout_payment_url(true)
-            )
+            'redirect' => false,
+            'html' => $html
         );
     }
 
@@ -114,4 +124,4 @@ class WC_Interswitch_Gateway extends WC_Payment_Gateway {
 
         return $is_available;
     }
-} 
+}
